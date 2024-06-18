@@ -37,3 +37,15 @@ class Visualizer:
         ax.set_ylabel("PCA component 2")
         ax.set_zlabel("PCA component 3")
         plt.show()
+
+    @staticmethod
+    def show_variance(X):
+        pca = PCA()
+        pca.fit_transform(X)
+        # Explained variance
+        explained_variance = pca.explained_variance_
+        total_explained_variance = explained_variance.sum()
+
+        # Print results
+        print(f"Explained Variance:\n{explained_variance}")
+        print(f"Total Explained Variance: {total_explained_variance:.4f}")
