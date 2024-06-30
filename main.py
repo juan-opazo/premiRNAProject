@@ -1,3 +1,4 @@
+import time
 import numpy as np
 from sklearn.svm import SVC
 from sklearn.model_selection import train_test_split
@@ -11,6 +12,7 @@ from sklearn.model_selection import train_test_split
 
 from FastaManager import FastaManager
 from MiRNA2Vec import MiRNA2Vec
+from Screening import Screening
 from Visualizer import Visualizer
 
 """
@@ -31,7 +33,7 @@ def prepare_lstm_data(tokenized_sequences, max_len):
 input_directory = "./data/sequences"
 
 # Create miRNA2Vec instance
-miRNA2Vec = MiRNA2Vec(k_mers=3, vector_size=16, epochs=5)
+miRNA2Vec = MiRNA2Vec(k_mers=3, vector_size=16, epochs=4)
 
 # Get sequences
 X_positive_sequences = FastaManager.get_all_sequences(input_directory + "/positive_samples")
@@ -58,10 +60,8 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_
 
 # Create the dataset for Word2Vec
 tokenized_sequences = FastaManager.create_dataset(X_train, miRNA2Vec)
-""" intentar con RNA2Vec y DNA2Vec"""
-"""dna2vec model puede traer errores por versiones distintas"""
-print(tokenized_sequences[0:2])
-quit()
+# print(tokenized_sequences[0])
+
 # Train the Word2Vec model
 miRNA2Vec.train_word2vec(tokenized_sequences)
 # miRNA2Vec.load_model('./pretrained/dna2vec.w2v', tokenized_sequences)
@@ -97,12 +97,30 @@ new_embedding = miRNA2Vec.get_average_embeddings([new_sequence])
 new_prediction = svm_model.predict(new_embedding)
 print(f"Prediction for new sequence: {new_prediction[0]}")
 
-Visualizer.show_variance(X_test)
+# Visualizer.show_variance(X_test)
 
-Visualizer.show_2d_scatter(X_test, y_test, title="PCA visualization of sequence embeddings")
+# Visualizer.show_2d_scatter(X_test, y_test, title="PCA visualization of sequence embeddings")
 
-Visualizer.show_3d_scatter(X_test, y_test, title="PCA visualization of sequence embeddings")
+# Visualizer.show_3d_scatter(X_test, y_test, title="PCA visualization of sequence embeddings")
 
+screening = Screening(X_positive_sequences, X_negative_sequences)
+sequence_for_screening = screening.get_sequence_for_screening()
+screen_size = screening.nt_with_most_data
+results = {0: 0, 1: 1}
+predicted_positive_positions = []
+start = time.time()
+for idx in range(0, len(sequence_for_screening[:3400])-screen_size):
+    new_sequence = sequence_for_screening[idx:idx+screen_size]
+    new_embedding = miRNA2Vec.get_average_embeddings([new_sequence])
+    new_prediction = svm_model.predict(new_embedding)
+    results[int(new_prediction[0])] += 1
+    if new_prediction:
+        predicted_positive_positions.append(idx)
+end = time.time()
+print(f"negative values: {results[0]}")
+print(f"positive values: {results[1]}")
+print(f"positions of positive values: {predicted_positive_positions}")
+print(f"time: {end-start} seconds")
 # Save the model
 output_model_path = "./pretrained/miRNAFromWord2Vec.w2v"
 miRNA2Vec.model.wv.save(output_model_path)
@@ -116,3 +134,10 @@ miRNA2Vec.model.wv.save(output_model_path)
 """comparar FS4"""
 """comparar rapidez con screening de secuencia larga"""
 """armar secuencia aleatoriamente con secuencias del dataset, <SEQ1><nucleotidos_aleatorios><SEQ2><nt_aleatorios>..."""
+
+
+"""probar con naive bayes para obtener probabilidades"""
+"""conseguir probabilidades del SVM"""
+"""mientras se aproxima, la probabilidad debe ir creciendo"""
+"""investigar sobre metrica para señal de probabilidades"""
+"""comparar con trabajo reciente (últimos 5 años)"""
