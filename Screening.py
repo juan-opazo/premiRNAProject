@@ -52,7 +52,7 @@ class Screening:
             map_to_return[nt] = len(self.positive_map.get(nt))
         return map_to_return
 
-"""
+
 input_directory = "./data/sequences"
 
 # Get sequences
@@ -60,7 +60,7 @@ X_positive_sequences = FastaManager.get_all_sequences(input_directory + "/positi
 X_artificial_positive_sequences = FastaManager.get_all_sequences(input_directory + "/artificial_positive_samples")
 X_negative_sequences = FastaManager.get_all_sequences(input_directory + "/negative_samples")
 X = X_positive_sequences + X_artificial_positive_sequences + X_negative_sequences
-
+"""
 print(f"positive sequences: {len(X_positive_sequences)}")
 print(f"artificial positive sequences: {len(X_artificial_positive_sequences)}")
 print(f"negative sequences: {len(X_negative_sequences)}")
