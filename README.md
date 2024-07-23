@@ -17,3 +17,9 @@ Remember to install libraries in requirements file
 ```
 pip install -r requirements.txt
 ```
+
+
+## Deactivate env
+```
+deactivate
+```

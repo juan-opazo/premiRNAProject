@@ -4,3 +4,7 @@ scipy<1.13
 numpy==1.26.4
 scikit-learn==1.5.0
 matplotlib==3.9.0
+keras==3.3.3
+seaborn==0.13.2
+pandas==2.2.2
+ViennaRNA==2.6.4
