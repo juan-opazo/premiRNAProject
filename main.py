@@ -1,14 +1,12 @@
 import time
 import numpy as np
 from sklearn.svm import SVC
-from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 from sklearn.metrics import confusion_matrix, classification_report
-#from keras.preprocessing.text import Tokenizer
-#from keras.preprocessing.sequence import pad_sequences
 from sklearn.model_selection import train_test_split
-#from keras.models import Sequential
-#from keras.layers import Embedding, LSTM, Dense
+import seaborn as sns
+import pandas as pd
+import matplotlib.pyplot as plt
 
 from FastaManager import FastaManager
 from MiRNA2Vec import MiRNA2Vec
@@ -33,7 +31,7 @@ def prepare_lstm_data(tokenized_sequences, max_len):
 input_directory = "./data/sequences"
 
 # Create miRNA2Vec instance
-miRNA2Vec = MiRNA2Vec(k_mers=3, vector_size=16, epochs=4)
+miRNA2Vec = MiRNA2Vec(k_mers=3, vector_size=16, epochs=3)
 
 # Get sequences
 X_positive_sequences = FastaManager.get_all_sequences(input_directory + "/positive_samples")
@@ -57,6 +55,11 @@ y = np.append(y, y_negative)
 # Split data into training and testing sets
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
 
+# Save arrays
+np.save('X_train.npy', X_train)
+np.save('X_test.npy', X_test)
+np.save('y_train.npy', y_train)
+np.save('y_test.npy', y_test)
 
 # Create the dataset for Word2Vec
 tokenized_sequences = FastaManager.create_dataset(X_train, miRNA2Vec)
@@ -72,7 +75,7 @@ X_test = miRNA2Vec.get_average_embeddings(X_test)
 print(f"X_train for SVM model: {X_train[0:2]}")
 
 # Train SVM
-svm_model = SVC(kernel='rbf', class_weight="balanced")
+svm_model = SVC(kernel='rbf', class_weight="balanced", probability=True)
 svm_model.fit(X_train, y_train)
 
 # Predict and evaluate
@@ -106,24 +109,29 @@ print(f"Prediction for new sequence: {new_prediction[0]}")
 screening = Screening(X_positive_sequences, X_negative_sequences)
 sequence_for_screening = screening.get_sequence_for_screening()
 screen_size = screening.nt_with_most_data
-results = {0: 0, 1: 1}
-predicted_positive_positions = []
+results = []
 start = time.time()
-for idx in range(0, len(sequence_for_screening[:3400])-screen_size):
+for idx in range(0, len(sequence_for_screening[:10000])-screen_size):
     new_sequence = sequence_for_screening[idx:idx+screen_size]
     new_embedding = miRNA2Vec.get_average_embeddings([new_sequence])
-    new_prediction = svm_model.predict(new_embedding)
-    results[int(new_prediction[0])] += 1
-    if new_prediction:
-        predicted_positive_positions.append(idx)
+    new_prediction = svm_model.predict_proba(new_embedding)
+    results.append(new_prediction[0][1])
 end = time.time()
-print(f"negative values: {results[0]}")
-print(f"positive values: {results[1]}")
-print(f"positions of positive values: {predicted_positive_positions}")
 print(f"time: {end-start} seconds")
+
+# Create a DataFrame
+df = pd.DataFrame({'x': range(len(results)), 'y': results})
+print(df.head())
+# Create a relplot
+sns.set_theme(style="whitegrid")
+sns.lineplot(data=df, x='x', y='y')
+
+# Show the plot
+plt.show()
+
 # Save the model
-output_model_path = "./pretrained/miRNAFromWord2Vec.w2v"
-miRNA2Vec.model.wv.save(output_model_path)
+# output_model_path = "./pretrained/miRNAFromWord2Vec.w2v"
+#miRNA2Vec.model.wv.save(output_model_path)
 
 # Example: Getting embeddings for k-mers
 # kmer = "AUG"
